@@ -433,6 +433,130 @@ Each cluster produces one representative flagged event.
 6. Heuristic thresholds
    Current penalty model is rule-based, not learned from medical datasets.
 
+# 🧪 Backend Testing Architecture
+
+The backend includes a structured test suite using **pytest** with isolated storage and full API validation.
+
+---
+
+## 📂 Test Structure
+
+backend/
+├── tests/
+│   ├── conftest.py
+│   ├── test_scoring_engine.py
+│   ├── test_metrics_calculator.py
+│   ├── test_temporal_aggregator.py
+│   ├── test_flagger.py
+│   ├── test_api_v2.py
+│   └── test_video_pipeline.py
+
+---
+
+## 🧱 Test Categories
+
+### 1️⃣ Unit Tests
+
+Validate core computational logic:
+
+- Frame scoring engine
+- Metric calculations
+- Temporal weighted aggregation
+- Event clustering and flagging
+
+These tests ensure mathematical correctness and deterministic behavior.
+
+---
+
+### 2️⃣ API Integration Tests
+
+Validate:
+
+- `/api/v2/health`
+- File validation logic
+- Error handling (400 / 422)
+- Successful JSON structure
+
+Uses FastAPI `TestClient`.
+
+---
+
+### 3️⃣ End-to-End Video Pipeline Test
+
+Validates:
+
+- Video upload
+- Frame extraction
+- Landmark processing
+- Score computation
+- Annotated video generation
+- PDF generation
+- JSON analysis persistence
+
+This ensures the complete system works cohesively.
+
+---
+
+## 🔒 Storage Isolation via `conftest.py`
+
+All tests run in a **temporary isolated directory**.
+
+`conftest.py`:
+
+- Overrides storage paths
+- Creates temporary folders
+- Cleans up automatically after test session
+
+This prevents test runs from polluting production storage.
+
+---
+
+## ▶️ Running Tests
+
+From backend root:
+
+```bash
+pytest -v
+````
+
+Expected output:
+
+```
+5 passed in XX.XXs
+```
+
+---
+
+## ⚠️ Current Warning
+
+Pydantic v2 deprecation warning:
+
+```
+metrics_obj.dict() → should be replaced with model_dump()
+```
+
+Planned update:
+
+```python
+metrics_obj.model_dump()
+```
+
+This does not affect functionality.
+
+---
+
+## 🎯 Coverage Scope
+
+The test suite validates:
+
+* Scoring logic integrity
+* Penalty weighting
+* Temporal aggregation behavior
+* Flagging thresholds
+* API contract compliance
+* Artifact generation
+* Video rendering synchronization
+
 ---
 
 # 🔮 Future Improvements
