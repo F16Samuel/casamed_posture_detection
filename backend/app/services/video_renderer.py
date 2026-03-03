@@ -32,7 +32,7 @@ def generate_annotated_video(report_id: str, original_video_path: str) -> str:
     target_fps = 60
     frame_multiplier = target_fps / original_fps
 
-    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+    fourcc = cv2.VideoWriter_fourcc(*"H264")
     out = cv2.VideoWriter(output_path, fourcc, target_fps, (width, height))
 
     frame_index = 0

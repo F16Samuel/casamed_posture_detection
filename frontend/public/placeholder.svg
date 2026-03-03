@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="400" height="300" viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="300" fill="#F3F4F6"/>
+  <rect x="120" y="60" width="160" height="180" rx="20" fill="#E5E7EB"/>
+  
+  <!-- Spine line -->
+  <line x1="200" y1="90" x2="200" y2="210" stroke="#2563EB" stroke-width="6"/>
+  
+  <!-- Vertebrae dots -->
+  <circle cx="200" cy="110" r="6" fill="#2563EB"/>
+  <circle cx="200" cy="130" r="6" fill="#2563EB"/>
+  <circle cx="200" cy="150" r="6" fill="#2563EB"/>
+  <circle cx="200" cy="170" r="6" fill="#2563EB"/>
+  <circle cx="200" cy="190" r="6" fill="#2563EB"/>
+  
+  <text x="200" y="250" text-anchor="middle" font-family="Inter, sans-serif" font-size="16" fill="#6B7280">
+    PostureAI Placeholder
+  </text>
+</svg>
