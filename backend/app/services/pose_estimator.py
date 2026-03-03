@@ -68,3 +68,25 @@ def extract_landmarks(frames: List) -> List[Dict]:
     logger.info(f"Pose extracted for {len(all_landmarks)} frames.")
 
     return all_landmarks
+
+def extract_landmarks_with_index(frames):
+    """
+    Returns:
+    [
+        {
+            "frame_index": int,
+            "landmarks": {...}
+        }
+    ]
+    """
+
+    results = []
+    raw_landmarks = extract_landmarks(frames)
+
+    for idx, landmarks in enumerate(raw_landmarks):
+        results.append({
+            "frame_index": idx,
+            "landmarks": landmarks
+        })
+
+    return results

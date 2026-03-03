@@ -27,7 +27,7 @@ def _extract_point(landmarks: Dict, index: int):
     return (landmarks[index]["x"], landmarks[index]["y"])
 
 
-def _compute_frame_metrics(landmarks: Dict):
+def compute_frame_metrics(landmarks: Dict):
     """
     Compute posture metrics for a single frame.
     """
@@ -87,7 +87,7 @@ def compute_aggregate_metrics(landmarks_per_frame: List[Dict]) -> Metrics:
     hip_diffs = []
 
     for landmarks in landmarks_per_frame:
-        frame_metrics = _compute_frame_metrics(landmarks)
+        frame_metrics = compute_frame_metrics(landmarks)
 
         neck_angles.append(frame_metrics["neck_angle"])
         spine_devs.append(frame_metrics["spine_vertical_deviation"])

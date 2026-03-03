@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     TEMP_FOLDER: str = "storage/temp"
     IMAGE_FOLDER: str = "storage/images"
     REPORT_FOLDER: str = "storage/reports"
+    ANALYSIS_FOLDER: str = "storage/analysis"
+    VIDEO_FOLDER: str = "storage/videos"
 
     FRAME_SAMPLING_RATE: int = 5
 

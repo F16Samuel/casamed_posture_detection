@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.api.v1.router import api_router
+from app.api.v2.router import api_router_v2
 from app.core.config import settings
 from app.core.logging import configure_logging
 from app.core.exceptions import (
@@ -33,7 +34,7 @@ app.add_middleware(
 )
 
 # Include API router
-app.include_router(api_router, prefix="/api/v1")
+app.include_router(api_router, prefix="/api/v2")
 
 
 # ---------------------------
