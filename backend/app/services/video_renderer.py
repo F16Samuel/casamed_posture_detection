@@ -1,4 +1,5 @@
 import os
+import subprocess
 import cv2
 from app.core.config import settings
 from app.services.analysis_writer import load_analysis
@@ -32,8 +33,8 @@ def generate_annotated_video(report_id: str, original_video_path: str) -> str:
     target_fps = 60
     frame_multiplier = target_fps / original_fps
 
-    fourcc = cv2.VideoWriter_fourcc(*"H264")
-    out = cv2.VideoWriter(output_path, fourcc, target_fps, (width, height))
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+    out = cv2.VideoWriter(output_path, fourcc, target_fps, (width, height), True)
 
     frame_index = 0
     frame_accumulator = 0.0
@@ -73,6 +74,24 @@ def generate_annotated_video(report_id: str, original_video_path: str) -> str:
 
     cap.release()
     out.release()
+
+    temp_path = output_path.replace(".mp4", "_temp.mp4")
+    os.rename(output_path, temp_path)
+
+    subprocess.run([
+        "ffmpeg",
+        "-y",
+        "-i", temp_path,
+        "-vcodec", "libx264",
+        "-preset", "fast",
+        "-profile:v", "baseline",
+        "-level", "3.0",
+        "-pix_fmt", "yuv420p",
+        "-movflags", "+faststart",
+        output_path
+    ])
+
+    os.remove(temp_path)
     cv2.destroyAllWindows()
 
     return output_path
