@@ -69,7 +69,7 @@ def extract_landmarks(frames: List) -> List[Dict]:
 
     return all_landmarks
 
-def extract_landmarks_with_index(frames):
+def extract_landmarks_with_index(frames, sampled_indices):
     """
     Returns:
     [
@@ -83,9 +83,9 @@ def extract_landmarks_with_index(frames):
     results = []
     raw_landmarks = extract_landmarks(frames)
 
-    for idx, landmarks in enumerate(raw_landmarks):
+    for landmarks, original_index in zip(raw_landmarks, sampled_indices):
         results.append({
-            "frame_index": idx,
+            "frame_index": original_index,
             "landmarks": landmarks
         })
 

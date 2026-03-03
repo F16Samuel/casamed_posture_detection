@@ -122,3 +122,90 @@ def render_overlay(
     logger.info(f"Overlay image saved at {image_path}")
 
     return image_path
+
+def draw_landmarks_on_frame(frame, landmarks):
+    """
+    Draw skeletal landmarks directly onto a frame.
+    Used for thumbnails and video rendering.
+    """
+
+    for point in landmarks:
+        x = int(point["x"] * frame.shape[1])
+        y = int(point["y"] * frame.shape[0])
+
+        cv2.circle(frame, (x, y), 4, (0, 255, 0), -1)
+
+    return frame
+
+def draw_analytical_overlay(frame, landmarks, metrics: dict):
+    """
+    Draw full analytical overlay (like v1) on a frame.
+    Used for v2 thumbnails and video.
+    """
+
+    image = frame.copy()
+    height, width, _ = image.shape
+
+    def get_point(index):
+        lm = landmarks[index]
+        return (
+            int(lm["x"] * width),
+            int(lm["y"] * height)
+        )
+
+    # -----------------------------
+    # Draw Skeleton Connections
+    # -----------------------------
+    for start, end in POSE_CONNECTIONS:
+        p1 = get_point(start)
+        p2 = get_point(end)
+        cv2.line(image, p1, p2, (255, 255, 255), 2)
+
+    # Important Points
+    nose = get_point(0)
+    left_shoulder = get_point(11)
+    right_shoulder = get_point(12)
+    left_hip = get_point(23)
+    right_hip = get_point(24)
+
+    shoulder_mid = (
+        (left_shoulder[0] + right_shoulder[0]) // 2,
+        (left_shoulder[1] + right_shoulder[1]) // 2
+    )
+
+    hip_mid = (
+        (left_hip[0] + right_hip[0]) // 2,
+        (left_hip[1] + right_hip[1]) // 2
+    )
+
+    # Colors
+    spine_color = _get_color(metrics["spine_vertical_deviation"], 5, 10)
+    shoulder_color = _get_color(metrics["shoulder_alignment_difference"], 2, 5)
+    hip_color = _get_color(metrics["hip_alignment_difference"], 2, 5)
+    neck_color = _get_color(metrics["neck_angle"], 10, 20)
+
+    # Analytical Lines
+    cv2.line(image, hip_mid, shoulder_mid, spine_color, 3)
+    cv2.line(image, left_shoulder, right_shoulder, shoulder_color, 3)
+    cv2.line(image, left_hip, right_hip, hip_color, 3)
+    cv2.line(image, shoulder_mid, nose, neck_color, 3)
+
+    font = cv2.FONT_HERSHEY_SIMPLEX
+
+    cv2.putText(image, f"Neck: {metrics['neck_angle']}°",
+                (nose[0], nose[1] - 20),
+                font, 0.6, neck_color, 2)
+
+    cv2.putText(image, f"Spine: {metrics['spine_vertical_deviation']}°",
+                (shoulder_mid[0], shoulder_mid[1] - 20),
+                font, 0.6, spine_color, 2)
+
+    cv2.putText(image, f"Shoulder diff: {metrics['shoulder_alignment_difference']}%",
+                (left_shoulder[0], left_shoulder[1] - 20),
+                font, 0.6, shoulder_color, 2)
+
+    cv2.putText(image, f"Hip diff: {metrics['hip_alignment_difference']}%",
+                (left_hip[0], left_hip[1] - 20),
+                font, 0.6, hip_color, 2)
+
+    return image

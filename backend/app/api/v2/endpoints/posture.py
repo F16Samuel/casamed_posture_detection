@@ -14,6 +14,10 @@ from app.services.metrics_calculator import compute_frame_metrics
 from app.services.scoring_engine import compute_posture_score
 from app.services.analysis_writer import save_analysis
 from app.services.temporal_aggregator import weighted_overall_score
+from app.services.temporal_flagger import extract_flagged_events
+from app.services.video_renderer import generate_annotated_video
+from app.services.temporal_report_generator import generate_temporal_pdf
+from app.services.event_thumbnail_generator import generate_event_thumbnails
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -55,13 +59,17 @@ async def analyze_posture_v2(file: UploadFile = File(...)):
     # ----------------------------------
     # Extract ALL Frames
     # ----------------------------------
-    frames, fps, total_frames, duration = extract_frames_from_video(temp_path)
+    frames, sampled_indices, fps, total_frames, duration = extract_frames_from_video(temp_path)
+
+
 
     # ----------------------------------
     # Pose Estimation (Full-frame)
     # ----------------------------------
-    landmarks_per_frame = extract_landmarks_with_index(frames)
-
+    landmarks_per_frame = extract_landmarks_with_index(
+        frames,
+        sampled_indices
+    )
     frame_results = []
 
     # ----------------------------------
@@ -72,13 +80,14 @@ async def analyze_posture_v2(file: UploadFile = File(...)):
         frame_index = frame_data["frame_index"]
         landmarks = frame_data["landmarks"]
 
-        metrics = compute_frame_metrics(landmarks)
-        score, classification = compute_posture_score(metrics)
+        metrics_obj = compute_frame_metrics(landmarks)
+
+        score, classification = compute_posture_score(metrics_obj)
 
         frame_results.append({
             "frame_index": frame_index,
             "timestamp": round(frame_index / fps, 3),
-            "metrics": metrics.dict(),
+            "metrics": metrics_obj.dict(),   # store as dict
             "score": score,
             "classification": classification,
             "landmarks": landmarks
@@ -95,6 +104,13 @@ async def analyze_posture_v2(file: UploadFile = File(...)):
     # Weighted Overall Score (75-25)
     # ----------------------------------
     overall_score = weighted_overall_score(frame_results)
+    
+    # ----------------------------------
+    # Extract Flagged Temporal Events
+    # ----------------------------------
+    flagging_result = extract_flagged_events(frame_results)
+
+    
 
     # ----------------------------------
     # Save Full Analysis JSON
@@ -112,6 +128,23 @@ async def analyze_posture_v2(file: UploadFile = File(...)):
     )
 
     logger.info(f"[v2] Analysis saved at {analysis_path}")
+    
+    # ----------------------------------
+    # Generate 60 FPS Annotated Video
+    # ----------------------------------
+    annotated_video_path = generate_annotated_video(
+        report_id=report_id,
+        original_video_path=temp_path
+    )
+
+    # ----------------------------------
+    # Generate Event Thumbnails
+    # ----------------------------------
+    thumbnails = generate_event_thumbnails(
+        report_id=report_id,
+        events=flagging_result["events"]
+    )
+
     # ----------------------------------
     # Cleanup Temp File
     # ----------------------------------
@@ -121,11 +154,27 @@ async def analyze_posture_v2(file: UploadFile = File(...)):
 
     logger.info(f"[v2] Full temporal posture analysis completed in {processing_time}s")
 
+    # ----------------------------------
+    # Generate Temporal PDF
+    # ----------------------------------
+    pdf_path = generate_temporal_pdf(
+        report_id=report_id,
+        overall_score=overall_score,
+        flagging_result=flagging_result,
+        processing_time=processing_time,
+        thumbnails=thumbnails
+    )
+
     return {
         "status": "success",
         "report_id": report_id,
         "overall_score": overall_score,
         "frames_analyzed": len(frame_results),
-        "duration_seconds": duration,
+        "percent_time_bad": flagging_result["percent_time_bad"],
+        "flagged_events": flagging_result["events"],
+        "artifacts": {
+            "annotated_video_url": f"/api/v2/video/{report_id}",
+            "pdf_report_url": f"/api/v2/report/{report_id}"
+        },
         "processing_time_seconds": processing_time
     }

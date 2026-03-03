@@ -34,7 +34,7 @@ app.add_middleware(
 )
 
 # Include API router
-app.include_router(api_router, prefix="/api/v2")
+app.include_router(api_router_v2, prefix="/api/v2")
 
 
 # ---------------------------

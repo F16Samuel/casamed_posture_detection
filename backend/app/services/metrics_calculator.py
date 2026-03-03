@@ -68,12 +68,12 @@ def compute_frame_metrics(landmarks: Dict):
     # ------------------------------------------------
     hip_diff = abs(left_hip[1] - right_hip[1]) * 100
 
-    return {
-        "neck_angle": neck_angle,
-        "spine_vertical_deviation": spine_deviation,
-        "shoulder_alignment_difference": shoulder_diff,
-        "hip_alignment_difference": hip_diff
-    }
+    return Metrics(
+        neck_angle=neck_angle,
+        spine_vertical_deviation=spine_deviation,
+        shoulder_alignment_difference=shoulder_diff,
+        hip_alignment_difference=hip_diff
+    )
 
 
 def compute_aggregate_metrics(landmarks_per_frame: List[Dict]) -> Metrics:

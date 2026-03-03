@@ -98,9 +98,12 @@ def extract_frames_from_video(video_path: str) -> List:
         cap.release()
         raise InvalidVideoDuration()
 
+    
+
     frames = []
-    frame_index = 0
     sampling_rate = settings.FRAME_SAMPLING_RATE
+    sampled_indices = []
+    frame_index = 0
 
     while True:
         ret, frame = cap.read()
@@ -109,6 +112,7 @@ def extract_frames_from_video(video_path: str) -> List:
 
         if frame_index % sampling_rate == 0:
             frames.append(frame)
+            sampled_indices.append(frame_index)
 
         frame_index += 1
 
@@ -119,4 +123,4 @@ def extract_frames_from_video(video_path: str) -> List:
     if len(frames) == 0:
         raise ValueError("No frames extracted from video.")
 
-    return frames, fps, frame_count, duration
+    return frames, sampled_indices, fps, frame_count, duration

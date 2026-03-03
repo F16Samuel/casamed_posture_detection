@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.v2.endpoints import posture, health, image, report
+from app.api.v2.endpoints import posture, health, image, report, video
 
 
 api_router_v2 = APIRouter()
@@ -28,3 +28,5 @@ api_router_v2.include_router(
     report.router,
     tags=["Reports V2"]
 )
+
+api_router_v2.include_router(video.router, tags=["Video V2"])
