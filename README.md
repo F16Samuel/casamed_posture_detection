@@ -542,6 +542,164 @@ metrics_obj.model_dump()
 ```
 
 This does not affect functionality.
+---
+
+# 🐳 Dockerized Deployment
+
+The project is fully containerized using Docker and Docker Compose.
+
+This enables:
+
+- Isolated backend execution (FastAPI + ML stack)
+- Production-grade frontend build served via Nginx
+- Networked service communication
+- Persistent storage volumes
+- Portable deployment across environments
+
+---
+
+## 🏗 Architecture Overview
+
+```
+
+Browser → Nginx (Frontend Container) → FastAPI (Backend Container)
+→ ML Processing (MediaPipe / TensorFlow Lite)
+→ Video Rendering + PDF Generation
+→ Persistent Storage Volume
+
+```
+
+---
+
+## 📂 Project Structure
+
+```
+
+casamed_posture_detection/
+│
+├── backend/
+│   ├── Dockerfile
+│   └── .dockerignore
+│
+├── frontend/
+│   ├── Dockerfile
+│   └── .dockerignore
+│
+└── docker-compose.yml
+
+```
+
+---
+
+## 🧱 Backend Container
+
+- Base: python:3.11-slim
+- Includes:
+  - OpenCV
+  - FFmpeg
+  - TensorFlow Lite
+  - MediaPipe
+  - FastAPI
+- Runs via:
+```
+
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+```
+
+---
+
+## 🌐 Frontend Container
+
+- Multi-stage build:
+- Stage 1: Node build (Vite)
+- Stage 2: Nginx static serving
+- Serves optimized production build
+- Exposed on port 3000
+
+---
+
+## 🔗 Container Networking
+
+Inside Docker network:
+
+- Backend reachable at:
+```
+
+[http://backend:8000](http://backend:8000)
+
+```
+
+Frontend environment variable:
+
+```
+
+VITE_API_BASE_URL=[http://backend:8000/api/v2](http://backend:8000/api/v2)
+
+````
+
+---
+
+## 📦 Running the Application
+
+From project root:
+
+```bash
+docker compose build
+docker compose up
+````
+
+Access:
+
+Frontend → [http://localhost:3000](http://localhost:3000)
+Backend → [http://localhost:8000](http://localhost:8000)
+
+Health check:
+
+```
+http://localhost:8000/api/v2/health
+```
+
+---
+
+## 💾 Persistent Storage
+
+The backend mounts a volume:
+
+```
+./backend/storage:/app/storage
+```
+
+This ensures:
+
+* Annotated videos persist
+* PDF reports persist
+* Analysis JSON persists
+* Data survives container restarts
+
+---
+
+## 🛑 Stopping Services
+
+```bash
+docker compose down
+```
+
+---
+
+## 🔧 Production Notes
+
+For production environments:
+
+* Increase Uvicorn workers:
+
+  ```
+  --workers 4
+  ```
+* Add reverse proxy (Nginx gateway)
+* Enable HTTPS (Certbot / Cloudflare)
+* Use environment-based configs
+* Add resource limits in docker-compose
 
 ---
 
