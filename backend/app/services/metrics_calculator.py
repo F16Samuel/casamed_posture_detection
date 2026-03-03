@@ -47,12 +47,16 @@ def _compute_frame_metrics(landmarks: Dict):
     # ------------------------------------------------
     neck_vec = vector(shoulder_mid, nose)
     neck_angle = angle_between(neck_vec, vertical_reference())
+    if neck_angle > 90:
+        neck_angle = 180 - neck_angle
 
     # ------------------------------------------------
     # Spine Deviation (hip_mid to shoulder_mid vs vertical)
     # ------------------------------------------------
     spine_vec = vector(hip_mid, shoulder_mid)
     spine_deviation = angle_between(spine_vec, vertical_reference())
+    if spine_deviation > 90:
+        spine_deviation = 180 - spine_deviation
 
     # ------------------------------------------------
     # Shoulder Alignment Difference (% vertical diff)

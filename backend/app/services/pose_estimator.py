@@ -1,72 +1,70 @@
 import logging
+import os
 from typing import List, Dict
 
 import cv2
 import mediapipe as mp
+from mediapipe.tasks import python
+from mediapipe.tasks.python import vision
 
 from app.core.exceptions import NoPersonDetected
 
 logger = logging.getLogger(__name__)
 
-mp_pose = mp.solutions.pose
 
+# -------------------------------
+# Load Pose Landmarker Model
+# -------------------------------
 
-class PoseEstimator:
-    """
-    Singleton-style MediaPipe Pose estimator.
-    """
+MODEL_PATH = os.path.join("models", "pose_landmarker_full.task")
 
-    def __init__(self):
-        self.pose = mp_pose.Pose(
-            static_image_mode=False,
-            model_complexity=1,
-            enable_segmentation=False,
-            min_detection_confidence=0.5,
-            min_tracking_confidence=0.5
-        )
+base_options = python.BaseOptions(model_asset_path=MODEL_PATH)
+options = vision.PoseLandmarkerOptions(
+    base_options=base_options,
+    running_mode=vision.RunningMode.IMAGE,
+    num_poses=1
+)
 
-    def extract(self, frames: List) -> List[Dict]:
-        """
-        Extract pose landmarks for each frame.
-        Returns a list of dictionaries (one per frame).
-        """
-
-        all_landmarks = []
-
-        for idx, frame in enumerate(frames):
-            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            results = self.pose.process(rgb_frame)
-
-            if not results.pose_landmarks:
-                logger.warning(f"No person detected in frame {idx}")
-                continue
-
-            landmarks = {}
-
-            for i, landmark in enumerate(results.pose_landmarks.landmark):
-                landmarks[i] = {
-                    "x": landmark.x,
-                    "y": landmark.y,
-                    "z": landmark.z,
-                    "visibility": landmark.visibility
-                }
-
-            all_landmarks.append(landmarks)
-
-        if len(all_landmarks) == 0:
-            raise NoPersonDetected()
-
-        logger.info(f"Pose extracted for {len(all_landmarks)} frames.")
-
-        return all_landmarks
-
-
-# Instantiate once (module-level singleton)
-pose_estimator = PoseEstimator()
+pose_landmarker = vision.PoseLandmarker.create_from_options(options)
 
 
 def extract_landmarks(frames: List) -> List[Dict]:
     """
-    Public function used by endpoint.
+    Extract pose landmarks using MediaPipe Tasks API.
     """
-    return pose_estimator.extract(frames)
+
+    all_landmarks = []
+
+    for idx, frame in enumerate(frames):
+
+        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+        mp_image = mp.Image(
+            image_format=mp.ImageFormat.SRGB,
+            data=rgb_frame
+        )
+
+        result = pose_landmarker.detect(mp_image)
+
+        if not result.pose_landmarks:
+            logger.warning(f"No person detected in frame {idx}")
+            continue
+
+        landmarks = {}
+
+        for i, landmark in enumerate(result.pose_landmarks[0]):
+            landmarks[i] = {
+                "x": landmark.x,
+                "y": landmark.y,
+                "z": landmark.z,
+                "visibility": landmark.visibility
+            }
+
+        all_landmarks.append(landmarks)
+
+    if len(all_landmarks) == 0:
+        raise NoPersonDetected()
+
+    logger.info(f"Pose extracted for {len(all_landmarks)} frames.")
+
+    return all_landmarks

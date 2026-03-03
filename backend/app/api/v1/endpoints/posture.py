@@ -78,9 +78,13 @@ async def analyze_posture(file: UploadFile = File(...)):
     # ----------------------------------
     # Render Skeleton Overlay
     # ----------------------------------
+    representative_frame = frames[0]
+    representative_landmarks = landmarks_per_frame[0]
+
     image_path = render_overlay(
         report_id=report_id,
-        representative_frame=frames[0],  # placeholder, refined later
+        representative_frame=representative_frame,
+        representative_landmarks=representative_landmarks,
         metrics=metrics
     )
 

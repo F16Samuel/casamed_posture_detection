@@ -3,26 +3,29 @@ import cv2
 import logging
 from typing import Dict
 
-import mediapipe as mp
-
 from app.core.config import settings
 from app.schemas.posture_response import Metrics
 
 logger = logging.getLogger(__name__)
 
-mp_pose = mp.solutions.pose
+
+# -----------------------------
+# Landmark Connections (Manual)
+# -----------------------------
+POSE_CONNECTIONS = [
+    (11, 12),  # shoulders
+    (11, 23),  # left torso
+    (12, 24),  # right torso
+    (23, 24),  # hips
+    (0, 11),   # nose to left shoulder
+    (0, 12)    # nose to right shoulder
+]
 
 
 # -----------------------------
 # Color Utility
 # -----------------------------
 def _get_color(value: float, good_threshold: float, moderate_threshold: float):
-    """
-    Returns BGR color based on severity.
-    Green = Good
-    Yellow = Moderate
-    Red = Poor
-    """
     if value <= good_threshold:
         return (0, 200, 0)  # Green
     elif value <= moderate_threshold:
@@ -31,38 +34,35 @@ def _get_color(value: float, good_threshold: float, moderate_threshold: float):
         return (0, 0, 255)  # Red
 
 
-def render_overlay(report_id: str, representative_frame, metrics: Metrics) -> str:
+def render_overlay(
+    report_id: str,
+    representative_frame,
+    representative_landmarks: Dict,
+    metrics: Metrics
+) -> str:
     """
-    Renders annotated skeleton overlay and saves image.
+    Render annotated overlay using precomputed landmarks.
     """
 
     image = representative_frame.copy()
     height, width, _ = image.shape
 
-    # Convert BGR to RGB for mediapipe drawing
-    rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-    with mp_pose.Pose(static_image_mode=True) as pose:
-        results = pose.process(rgb_image)
-
-        if results.pose_landmarks:
-            mp.solutions.drawing_utils.draw_landmarks(
-                image,
-                results.pose_landmarks,
-                mp_pose.POSE_CONNECTIONS
-            )
-
-    # -----------------------------
-    # Extract Important Points
-    # -----------------------------
-    landmarks = results.pose_landmarks.landmark
-
     def get_point(index):
+        lm = representative_landmarks[index]
         return (
-            int(landmarks[index].x * width),
-            int(landmarks[index].y * height)
+            int(lm["x"] * width),
+            int(lm["y"] * height)
         )
 
+    # -----------------------------
+    # Draw Skeleton Connections
+    # -----------------------------
+    for start, end in POSE_CONNECTIONS:
+        p1 = get_point(start)
+        p2 = get_point(end)
+        cv2.line(image, p1, p2, (255, 255, 255), 2)
+
+    # Extract important points
     nose = get_point(0)
     left_shoulder = get_point(11)
     right_shoulder = get_point(12)
@@ -80,27 +80,16 @@ def render_overlay(report_id: str, representative_frame, metrics: Metrics) -> st
     )
 
     # -----------------------------
-    # Draw Spine Line
+    # Draw Analytical Lines
     # -----------------------------
     spine_color = _get_color(metrics.spine_vertical_deviation, 5, 10)
-    cv2.line(image, hip_mid, shoulder_mid, spine_color, 3)
-
-    # -----------------------------
-    # Draw Shoulder Line
-    # -----------------------------
     shoulder_color = _get_color(metrics.shoulder_alignment_difference, 2, 5)
-    cv2.line(image, left_shoulder, right_shoulder, shoulder_color, 3)
-
-    # -----------------------------
-    # Draw Hip Line
-    # -----------------------------
     hip_color = _get_color(metrics.hip_alignment_difference, 2, 5)
-    cv2.line(image, left_hip, right_hip, hip_color, 3)
-
-    # -----------------------------
-    # Draw Neck Line
-    # -----------------------------
     neck_color = _get_color(metrics.neck_angle, 10, 20)
+
+    cv2.line(image, hip_mid, shoulder_mid, spine_color, 3)
+    cv2.line(image, left_shoulder, right_shoulder, shoulder_color, 3)
+    cv2.line(image, left_hip, right_hip, hip_color, 3)
     cv2.line(image, shoulder_mid, nose, neck_color, 3)
 
     # -----------------------------
